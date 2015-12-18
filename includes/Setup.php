@@ -96,7 +96,9 @@ class Setup
             return;
         }
 
-        $this->copyHooks();
+        if ($hookCount = $this->copyHooks()) {
+            cli\line('Success: %d hook(s) has/have been copied successfully!', $hookCount);
+        }
     }
 
     /**
@@ -112,8 +114,11 @@ class Setup
 
         foreach ($hooks as $hook) {
             try {
-                copy($hook, $this->hooksDir);
+                $filename = basename($hook);
+
+                copy($hook, $this->projectDir . '/.git/hooks/' . $filename);
                 $count++;
+
             } catch (\Exception $e) {
                 cli\err(sprintf(
                     'Unable to copy %s hook: %s',
