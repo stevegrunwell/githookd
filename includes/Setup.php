@@ -176,6 +176,6 @@ class Setup
             return false;
         }
 
-
+        return true;
     }
 }
