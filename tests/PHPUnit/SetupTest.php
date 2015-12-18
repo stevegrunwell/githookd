@@ -28,6 +28,9 @@ class SetupTest extends \PHPUnit_Framework_TestCase
         $instance->shouldReceive('registerArgs')
             ->once()
             ->andReturn(new MockArgument);
+        $instance->shouldReceive('copyHooks')
+            ->once()
+            ->andReturn(0);
 
         $instance->install();
     }
