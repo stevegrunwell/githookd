@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+#
+# Commands to be run before a commit can be made to the repository.
+
+# Run PHP_CodeSniffer
+echo "Running PHP_CodeSniffer..."
+
+git diff --name-only --cached | xargs vendor/bin/phpcs --standard=./phpcs.xml
+if [ $? != 0 ]
+then
+	echo "Please fix coding standards errors before committing"
+	exit 1
+fi
