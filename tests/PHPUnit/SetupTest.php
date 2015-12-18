@@ -8,6 +8,7 @@
 namespace GitHookd;
 
 use Mockery as M;
+use ReflectionMethod;
 
 class SetupTest extends \PHPUnit_Framework_TestCase
 {
@@ -47,5 +48,15 @@ class SetupTest extends \PHPUnit_Framework_TestCase
             ->andReturn($args);
 
         $this->expectOutputString('HELP', $instance->install());
+    }
+
+    public function testFilterHooks()
+    {
+        $instance = new Setup;
+        $method   = new ReflectionMethod($instance, 'filterHooks');
+        $method->setAccessible(true);
+
+        $this->assertTrue($method->invoke($instance, 'pre-commit'));
+        $this->assertFalse($method->invoke($instance, 'FOOBAR'));
     }
 }
