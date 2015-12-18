@@ -95,6 +95,8 @@ class Setup
         if (! $this->verifyDirectories()) {
             return;
         }
+
+        $this->copyHooks();
     }
 
     /**
@@ -102,11 +104,11 @@ class Setup
      */
     protected function copyHooks()
     {
-        $hooks = glob($this->hooksDir);
+        $hooks = glob($this->hooksDir . '/*');
         $count = 0;
 
         // Filter the hooks to remove invalid files.
-        $hooks = array_filter([$this, 'filterHooks'], $hooks);
+        $hooks = array_filter($hooks, [$this, 'filterHooks']);
 
         foreach ($hooks as $hook) {
             try {
