@@ -5,6 +5,7 @@ php:
   - 7.0
 
 script:
+	- composer install --prefer-source
   - ./vendor/bin/phpunit --coverage-clover build/logs/clover.xml
   - ./vendor/bin/phpcs
 
