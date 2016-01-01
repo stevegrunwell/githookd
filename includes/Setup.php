@@ -103,6 +103,8 @@ class Setup
 
     /**
      * Copy valid hooks to the project's .git/hooks directory.
+     *
+     * @return int The number of hooks copied.
      */
     protected function copyHooks()
     {
@@ -167,6 +169,7 @@ class Setup
     /**
      * Verify that necessary file directories are in place.
      *
+     * @return bool True if everything's as it should be, false otherwise.
      */
     protected function verifyDirectories()
     {
