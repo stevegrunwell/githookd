@@ -39,6 +39,18 @@ class Setup
     protected $options = [];
 
     /**
+     * @var array $postInstallCmd An array of commands to be added to Composer's post-install-cmd
+     *                            during installation.
+     */
+    protected $postInstallCmd = [];
+
+    /**
+     * @var array $postUpdateCmd An array of commands to be added to Composer's post-update-cmd
+     *                           during installation.
+     */
+    protected $postUpdateCmd = [];
+
+    /**
      * @link https://www.kernel.org/pub/software/scm/git/docs/githooks.html
      */
     protected $whitelistedHooks = [
@@ -183,6 +195,62 @@ class Setup
                 cli\err('An error occurred creating .git/hooks, unable to proceed!');
                 return;
             }
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Add post-install and post-update commands to the composer.json file.
+     *
+     * @return bool True if the commands were written, false if nothing was written.
+     */
+    protected function writeComposerHooks()
+    {
+        if (empty($this->postInstallCmd) && empty($this->postUpdateCmd)) {
+            return false;
+        }
+
+        $composer = $this->getProjectDir() . '/composer.json';
+
+        if (! is_readable($composer) || ! is_writable($composer)) {
+            cli\err(sprintf(
+                'The file at %s is not writable, unable to add Composer hooks',
+                $composer
+            ));
+            return false;
+        }
+
+        $contents = file_get_contents($composer);
+        $contents = (array) json_decode($contents, true);
+        $hooks    = array(
+            'post-install-cmd' => $this->postInstallCmd,
+            'post-update-cmd'  => $this->postUpdateCmd,
+        );
+
+        foreach ($hooks as $hook => $commands) {
+            $commands = (array) $commands;
+
+            if (isset($contents[$hook])) {
+                $contents[$hook] = array_merge((array) $contents[$hook], $commands);
+            } else {
+                $contents[$hook] = $commands;
+            }
+        }
+
+        try {
+            $fh = fopen($composer, 'wb');
+            fwrite($fh, json_encode($contents));
+            fclose($fh);
+
+            cli\line('Composer hooks installed successfully');
+
+        } catch (\Exception $e) {
+            cli\err(sprintf(
+                'An error occurred installing Composer hooks: %s',
+                $e->getMessage()
+            ));
             return false;
         }
 
