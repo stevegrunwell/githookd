@@ -11,12 +11,20 @@ use Mockery as M;
 use ReflectionMethod;
 use ReflectionProperty;
 use org\bovigo\vfs\vfsStream;
+use cli;
 
 class SetupTest extends \PHPUnit_Framework_TestCase
 {
+
     public function setUp()
     {
         vfsStream::setup('testDir');
+
+        // Silence the output of the PHP CLI Tools' output.
+        cli\Colors::disable();
+        cli\Streams::setStream('out', fopen('php://output', 'w'));
+        cli\Streams::setStream('err', fopen('php://output', 'w'));
+
         parent::setUp();
     }
 
@@ -100,6 +108,7 @@ class SetupTest extends \PHPUnit_Framework_TestCase
 
         $method = new ReflectionMethod($instance, 'writeComposerHooks');
         $method->setAccessible(true);
+        $this->expectOutputString('Composer hooks installed successfully' . PHP_EOL);
         $this->assertTrue($method->invoke($instance));
 
         $composer = file_get_contents(vfsStream::url('testDir/composer.json'));
@@ -137,6 +146,7 @@ class SetupTest extends \PHPUnit_Framework_TestCase
         $method = new ReflectionMethod($instance, 'writeComposerHooks');
         $method->setAccessible(true);
 
+        $this->expectOutputRegex('/The file at .+ is not writable/');
         $this->assertFalse($method->invoke($instance));
     }
 
@@ -173,6 +183,7 @@ class SetupTest extends \PHPUnit_Framework_TestCase
 
         $method = new ReflectionMethod($instance, 'writeComposerHooks');
         $method->setAccessible(true);
+        $this->expectOutputString('Composer hooks installed successfully' . PHP_EOL);
         $this->assertTrue($method->invoke($instance));
 
         $composer = file_get_contents(vfsStream::url('testDir/composer.json'));
