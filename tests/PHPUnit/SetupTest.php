@@ -52,6 +52,9 @@ class SetupTest extends \PHPUnit_Framework_TestCase
         $instance->shouldReceive('copyHooks')
             ->once()
             ->andReturn(0);
+        $instance->shouldReceive('installComposerHooks')
+            ->once()
+            ->andReturn(true);
 
         $instance->install();
     }

@@ -91,6 +91,16 @@ class Setup
     }
 
     /**
+     * Determine if there are Composer hooks to be written.
+     *
+     * @return bool True if $postInstallCmd and/or $postUpdateCmd are not empty, false otherwise.
+     */
+    public function hasComposerHooks()
+    {
+        return ! empty($this->postInstallCmd) || ! empty($this->postUpdateCmd);
+    }
+
+    /**
      * The main installation process to set up GitHook'd for a project.
      */
     public function install()
@@ -111,6 +121,8 @@ class Setup
         if ($hookCount = $this->copyHooks()) {
             cli\line('Success: %d hook(s) has/have been copied successfully!', $hookCount);
         }
+
+        $this->installComposerHooks();
     }
 
     /**
@@ -154,6 +166,24 @@ class Setup
     protected function filterHooks($hook)
     {
         return in_array(basename($hook), $this->whitelistedHooks);
+    }
+
+    /**
+     * If there are Composer hooks to install, do so.
+     *
+     * @return bool True if hooks were added to the project's composer.json file, false otherwise.
+     */
+    protected function installComposerHooks()
+    {
+        if (! $this->hasComposerHooks()) {
+            return false;
+        }
+
+        if (cli\choose('This package would like to install hooks in your composer.json file. Proceed')) {
+            return $this->writeComposerHooks();
+        }
+
+        return false;
     }
 
     /**
