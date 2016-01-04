@@ -39,6 +39,18 @@ class Setup
     protected $options = [];
 
     /**
+     * @var array $postInstallCmd An array of commands to be added to Composer's post-install-cmd
+     *                            during installation.
+     */
+    protected $postInstallCmd = [];
+
+    /**
+     * @var array $postUpdateCmd An array of commands to be added to Composer's post-update-cmd
+     *                           during installation.
+     */
+    protected $postUpdateCmd = [];
+
+    /**
      * @link https://www.kernel.org/pub/software/scm/git/docs/githooks.html
      */
     protected $whitelistedHooks = [
@@ -79,6 +91,16 @@ class Setup
     }
 
     /**
+     * Determine if there are Composer hooks to be written.
+     *
+     * @return bool True if $postInstallCmd and/or $postUpdateCmd are not empty, false otherwise.
+     */
+    public function hasComposerHooks()
+    {
+        return ! empty($this->postInstallCmd) || ! empty($this->postUpdateCmd);
+    }
+
+    /**
      * The main installation process to set up GitHook'd for a project.
      */
     public function install()
@@ -99,6 +121,8 @@ class Setup
         if ($hookCount = $this->copyHooks()) {
             cli\line('Success: %d hook(s) has/have been copied successfully!', $hookCount);
         }
+
+        $this->installComposerHooks();
     }
 
     /**
@@ -145,6 +169,24 @@ class Setup
     }
 
     /**
+     * If there are Composer hooks to install, do so.
+     *
+     * @return bool True if hooks were added to the project's composer.json file, false otherwise.
+     */
+    protected function installComposerHooks()
+    {
+        if (! $this->hasComposerHooks()) {
+            return false;
+        }
+
+        if (cli\choose('This package would like to install hooks in your composer.json file. Proceed')) {
+            return $this->writeComposerHooks();
+        }
+
+        return false;
+    }
+
+    /**
      * Register arguments available via the CLI.
      *
      * @return cli\Arguments An arguments object.
@@ -183,6 +225,62 @@ class Setup
                 cli\err('An error occurred creating .git/hooks, unable to proceed!');
                 return;
             }
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Add post-install and post-update commands to the composer.json file.
+     *
+     * @return bool True if the commands were written, false if nothing was written.
+     */
+    protected function writeComposerHooks()
+    {
+        if (empty($this->postInstallCmd) && empty($this->postUpdateCmd)) {
+            return false;
+        }
+
+        $composer = $this->getProjectDir() . '/composer.json';
+
+        if (! is_readable($composer) || ! is_writable($composer)) {
+            cli\err(sprintf(
+                'The file at %s is not writable, unable to add Composer hooks',
+                $composer
+            ));
+            return false;
+        }
+
+        $contents = file_get_contents($composer);
+        $contents = (array) json_decode($contents, true);
+        $hooks    = array(
+            'post-install-cmd' => $this->postInstallCmd,
+            'post-update-cmd'  => $this->postUpdateCmd,
+        );
+
+        foreach ($hooks as $hook => $commands) {
+            $commands = (array) $commands;
+
+            if (isset($contents[$hook])) {
+                $contents[$hook] = array_merge((array) $contents[$hook], $commands);
+            } else {
+                $contents[$hook] = $commands;
+            }
+        }
+
+        try {
+            $fh = fopen($composer, 'wb');
+            fwrite($fh, json_encode($contents));
+            fclose($fh);
+
+            cli\line('Composer hooks installed successfully');
+
+        } catch (\Exception $e) {
+            cli\err(sprintf(
+                'An error occurred installing Composer hooks: %s',
+                $e->getMessage()
+            ));
             return false;
         }
 
